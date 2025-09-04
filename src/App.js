@@ -7,7 +7,8 @@ import { ethers } from 'ethers';
 import axios from 'axios';
 import './App.css';
 
-const API_BASE_URL = 'https://landproperty-backend.onrender.com/api' || 'http://localhost:5001/api';
+const API_BASE_URL = 'https://landproperty-backend.onrender.com/api',
+ 'http://localhost:5001/api';
 
 // ====================================================================
 // 0. HELPER COMPONENTS
