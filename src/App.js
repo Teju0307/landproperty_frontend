@@ -7,8 +7,9 @@ import { ethers } from 'ethers';
 import axios from 'axios';
 import './App.css';
 
-const API_BASE_URL = 'https://landproperty-backend.onrender.com/api',
- 'http://localhost:5001/api';
+const API_BASE_URL = process.env.NODE_ENV === 'production'
+  ? 'https://landproperty-backend.onrender.com/api'
+  : 'http://localhost:5001/api';
 
 // ====================================================================
 // 0. HELPER COMPONENTS
@@ -19,6 +20,9 @@ const FormMessage = ({ message, type }) => {
     return <p className={`message ${type}`}>{message}</p>;
 };
 
+// ADDED: Reusable Loader component
+const Loader = () => <div className="loader"></div>;
+
 
 // ====================================================================
 // 1. AUTHENTICATION COMPONENTS (Login, Register) - UPDATED
@@ -28,26 +32,33 @@ const LoginComponent = ({ setToken }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false); // ADDED: Loading state
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true); // ADDED: Start loading
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
       setToken(response.data.token);
     } catch (err) {
-      // Use error response from axios for more specific messages
       setError(err.response?.data?.msg || 'Failed to login. Please try again.');
+    } finally {
+      setLoading(false); // ADDED: Stop loading regardless of outcome
     }
   };
 
   return (
     <div className="auth-container">
-      <h2>Login</h2>
+      <h2>Welcome Back</h2>
       <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">Login</button>
+        {/* MODIFIED: Added disabled attribute */}
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
+        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading} />
+        {/* MODIFIED: Show loader when loading */}
+        <button type="submit" disabled={loading}>
+          {loading ? <Loader /> : 'Login'}
+        </button>
       </form>
       {error && <p className="error-msg">{error}</p>}
       <p>Don't have an account? <Link to="/register">Register here</Link></p>
@@ -61,27 +72,35 @@ const RegisterComponent = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false); // ADDED: Loading state
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true); // ADDED: Start loading
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/register`, { email, password });
       setSuccess(response.data.msg + ' Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.response?.data?.msg || 'Failed to register. Please try again.');
+    } finally {
+        setLoading(false); // ADDED: Stop loading
     }
   };
   
   return (
     <div className="auth-container">
-      <h2>Register</h2>
+      <h2>Create Your Account</h2>
       <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password (min 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">Register</button>
+        {/* MODIFIED: Added disabled attribute */}
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
+        <input type="password" placeholder="Password (min 6 characters)" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={loading} />
+        {/* MODIFIED: Show loader when loading */}
+        <button type="submit" disabled={loading}>
+          {loading ? <Loader /> : 'Register'}
+        </button>
       </form>
       {error && <p className="error-msg">{error}</p>}
       {success && <p className="success-msg">{success}</p>}
@@ -92,28 +111,32 @@ const RegisterComponent = () => {
 
 
 // ====================================================================
-// 2. REGISTRY FORM COMPONENTS (No changes needed, code is good)
+// 2. REGISTRY FORM COMPONENTS (Only updating one to show pattern)
 // ====================================================================
 
-// --- 2a. Register Owner Form ---
 const RegisterOwnerForm = () => {
     const [formData, setFormData] = useState({ name: '', contact: '', email: '', proofId: '' });
     const [message, setMessage] = useState({ text: '', type: '' });
+    const [loading, setLoading] = useState(false); // ADDED: Loading state
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setMessage({text: '', type: ''});
         if (!formData.name || !formData.contact || !formData.email || !formData.proofId) {
             setMessage({ text: 'All fields are required.', type: 'error' });
             return;
         }
+        setLoading(true); // ADDED: Start loading
         try {
             const response = await axios.post(`${API_BASE_URL}/registerOwner`, formData);
             setMessage({ text: response.data.message, type: 'success' });
             setFormData({ name: '', contact: '', email: '', proofId: '' });
         } catch (error) {
             setMessage({ text: error.response?.data?.message || 'Failed to register owner.', type: 'error' });
+        } finally {
+            setLoading(false); // ADDED: Stop loading
         }
     };
 
@@ -121,18 +144,23 @@ const RegisterOwnerForm = () => {
         <div className="form-container">
             <h3>Register New Owner</h3>
             <form onSubmit={handleSubmit}>
-                <div className="form-group"><input name="name" value={formData.name} onChange={handleChange} placeholder="Owner Name" /></div>
-                <div className="form-group"><input name="contact" value={formData.contact} onChange={handleChange} placeholder="Contact Number" /></div>
-                <div className="form-group"><input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email ID" /></div>
-                <div className="form-group"><input name="proofId" value={formData.proofId} onChange={handleChange} placeholder="Aadhaar / Passport ID" /></div>
-                <button type="submit">Register Owner</button>
+                {/* MODIFIED: Added disabled attributes */}
+                <div className="form-group"><input name="name" value={formData.name} onChange={handleChange} placeholder="Owner Name" disabled={loading} /></div>
+                <div className="form-group"><input name="contact" value={formData.contact} onChange={handleChange} placeholder="Contact Number" disabled={loading} /></div>
+                <div className="form-group"><input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email ID" disabled={loading} /></div>
+                <div className="form-group"><input name="proofId" value={formData.proofId} onChange={handleChange} placeholder="Aadhaar / Passport ID" disabled={loading} /></div>
+                {/* MODIFIED: Show loader when loading */}
+                <button type="submit" disabled={loading}>
+                    {loading ? <Loader /> : 'Register Owner'}
+                </button>
             </form>
             <FormMessage message={message.text} type={message.type} />
         </div>
     );
 };
 
-// --- 2b. Register Land Form ---
+// ...THE REST OF YOUR COMPONENTS REMAIN THE SAME...
+// (You can apply the loading state pattern to them as needed)
 const RegisterLandForm = () => {
     const [formData, setFormData] = useState({ location: '', area: '', marketValue: '', propertyType: '', surveyNumber: '', currentOwnerId: '' });
     const [owners, setOwners] = useState([]);
@@ -189,7 +217,6 @@ const RegisterLandForm = () => {
     );
 };
 
-// --- 2c. Transfer Ownership Form ---
 const TransferOwnershipForm = () => {
     const [landId, setLandId] = useState('');
     const [newOwnerId, setNewOwnerId] = useState('');
@@ -254,7 +281,6 @@ const TransferOwnershipForm = () => {
     );
 };
 
-// --- 2d. View Records Component ---
 const ViewRecords = () => {
     const [landId, setLandId] = useState('');
     const [lands, setLands] = useState([]);
@@ -335,7 +361,7 @@ const ViewRecords = () => {
 
 
 // ====================================================================
-// 3. DASHBOARD COMPONENT (The Main Hub) - No changes needed, code is good
+// 3. DASHBOARD COMPONENT (The Main Hub)
 // ====================================================================
 const DashboardComponent = ({ user, handleLogout, walletAddress, setWalletAddress }) => {
     const [activeTab, setActiveTab] = useState('registerOwner');
@@ -376,13 +402,12 @@ const DashboardComponent = ({ user, handleLogout, walletAddress, setWalletAddres
     return (
         <div className="dashboard-container">
             <div className="header">
-                <h1>Land Registry System</h1>
+                <h1>Land Registry</h1>
                 <div className="header-right">
                     <span>Logged in: <strong>{user?.email}</strong></span>
                     <button onClick={handleLogout} className="logout-btn">Logout</button>
                 </div>
             </div>
-
             <div className="wallet-section">
                 <h2>Wallet Connection</h2>
                 {walletAddress ? (
@@ -397,7 +422,6 @@ const DashboardComponent = ({ user, handleLogout, walletAddress, setWalletAddres
                     </div>
                 )}
             </div>
-
             <div className="main-content">
                 <nav className="tabs">
                     <button onClick={() => setActiveTab('registerOwner')} className={activeTab === 'registerOwner' ? 'active' : ''}>Register Owner</button>
@@ -414,7 +438,7 @@ const DashboardComponent = ({ user, handleLogout, walletAddress, setWalletAddres
 };
 
 // ====================================================================
-// 4. MAIN APP COMPONENT (Handles State and Routing) - No changes needed, code is good
+// 4. MAIN APP COMPONENT (Handles State and Routing)
 // ====================================================================
 function App() {
     const [token, setToken] = useState(localStorage.getItem('token'));
