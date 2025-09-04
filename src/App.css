@@ -80,6 +80,7 @@ a:hover { filter: brightness(1.1); }
   font-weight: 700;
   background: var(--gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -160,6 +161,7 @@ button:disabled {
   margin: 0;
   background: var(--gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .header-right span { font-weight: 500; }
